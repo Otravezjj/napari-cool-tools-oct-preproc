@@ -2,3 +2,10 @@ name: napari-cool-tools-oct-preproc
 display_name: COOL Tools OCT Preprocessing 
 contributions:
   commands:
+    - id: napari-cool-tools-oct-preproc.generate_enface
+      title: Generate Enface Image from structural OCT
+      python_name: napari_cool_tools_oct_preproc._oct_preproc_utils:generate_enface_image
+  widgets:
+    - command: napari-cool-tools-oct-preproc.generate_enface
+      display_name: Generate Enface Image from structural OCT
+      autogenerate: true
