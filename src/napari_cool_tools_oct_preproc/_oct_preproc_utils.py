@@ -114,7 +114,7 @@ def generate_enface_image_thread(vol:Image, debug=False, sin_correct=True, log_c
 
     show_info(f'Generate enface image thread has completed')
 
-def process_bscan_preset(vol:Image, ascan_corr:bool=True, Bandpass:bool=False, CLAHE:bool=False, Med:bool=True):
+def process_bscan_preset(vol:Image, ascan_corr:bool=True, Bandpass:bool=False, CLAHE:bool=False, Med:bool=False):
     """Do initial preprocessing of OCT B-scan volume.
     Args:
         vol (Image): 3D ndarray representing structural OCT data
@@ -126,7 +126,7 @@ def process_bscan_preset(vol:Image, ascan_corr:bool=True, Bandpass:bool=False, C
     return 
 
 @thread_worker(connect={"returned": viewer.add_layer})
-def process_bscan_preset_thread(vol:Image, ascan_corr:bool=True, Bandpass:bool=False, CLAHE:bool=False, Med:bool=True)->Layer:
+def process_bscan_preset_thread(vol:Image, ascan_corr:bool=True, Bandpass:bool=False, CLAHE:bool=False, Med:bool=False)->Layer:
     """Do initial preprocessing of OCT B-scan volume.
     Args:
         vol (Image): 3D ndarray representing structural OCT data
@@ -141,7 +141,7 @@ def process_bscan_preset_thread(vol:Image, ascan_corr:bool=True, Bandpass:bool=F
     show_info(f"B-scan preset thread completed")
     return output
 
-def process_bscan_preset_func(vol:Image, ascan_corr:bool=True, Bandpass:bool=False, CLAHE:bool=False, Med:bool=True)->Layer:
+def process_bscan_preset_func(vol:Image, ascan_corr:bool=True, Bandpass:bool=False, CLAHE:bool=False, Med:bool=False)->Layer:
     """Do initial preprocessing of OCT B-scan volume.
     Args:
         vol (Image): 3D ndarray representing structural OCT data
