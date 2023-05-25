@@ -114,7 +114,7 @@ def generate_enface_image_thread(vol:Image, debug=False, sin_correct=True, log_c
 
     show_info(f'Generate enface image thread has completed')
 
-def process_bscan_preset(vol:Image, ascan_corr:bool=True, Bandpass:bool=False, CLAHE:bool=False):
+def process_bscan_preset(vol:Image, ascan_corr:bool=True, Bandpass:bool=False, CLAHE:bool=False, Med:bool=True):
     """Do initial preprocessing of OCT B-scan volume.
     Args:
         vol (Image): 3D ndarray representing structural OCT data
@@ -122,11 +122,11 @@ def process_bscan_preset(vol:Image, ascan_corr:bool=True, Bandpass:bool=False, C
     Returns:
         processed b-scan volume(Image)"""
     
-    process_bscan_preset_thread(vol=vol,ascan_corr=ascan_corr,Bandpass=Bandpass,CLAHE=CLAHE)
+    process_bscan_preset_thread(vol=vol,ascan_corr=ascan_corr,Bandpass=Bandpass,CLAHE=CLAHE,Med=Med)
     return 
 
 @thread_worker(connect={"returned": viewer.add_layer})
-def process_bscan_preset_thread(vol:Image, ascan_corr:bool=True, Bandpass:bool=False, CLAHE:bool=False)->Layer:
+def process_bscan_preset_thread(vol:Image, ascan_corr:bool=True, Bandpass:bool=False, CLAHE:bool=False, Med:bool=True)->Layer:
     """Do initial preprocessing of OCT B-scan volume.
     Args:
         vol (Image): 3D ndarray representing structural OCT data
@@ -135,13 +135,13 @@ def process_bscan_preset_thread(vol:Image, ascan_corr:bool=True, Bandpass:bool=F
         processed b-scan volume(Image)"""
     
     show_info(f"B-scan preset thread started")
-    output = process_bscan_preset_func(vol=vol,ascan_corr=ascan_corr,Bandpass=Bandpass,CLAHE=CLAHE)
+    output = process_bscan_preset_func(vol=vol,ascan_corr=ascan_corr,Bandpass=Bandpass,CLAHE=CLAHE,Med=Med)
     torch.cuda.empty_cache()
     memory_stats()
     show_info(f"B-scan preset thread completed")
     return output
 
-def process_bscan_preset_func(vol:Image, ascan_corr:bool=True, Bandpass:bool=False, CLAHE:bool=False)->Layer:
+def process_bscan_preset_func(vol:Image, ascan_corr:bool=True, Bandpass:bool=False, CLAHE:bool=False, Med:bool=True)->Layer:
     """Do initial preprocessing of OCT B-scan volume.
     Args:
         vol (Image): 3D ndarray representing structural OCT data
@@ -153,6 +153,7 @@ def process_bscan_preset_func(vol:Image, ascan_corr:bool=True, Bandpass:bool=Fal
     from napari_cool_tools_img_proc._denoise import diff_of_gaus_func
     from napari_cool_tools_img_proc._equalization import clahe_pt_func
     from napari_cool_tools_img_proc._luminance import adjust_log_pt_func
+    from napari_cool_tools_img_proc._filters import filter_bilateral_pt_func, filter_median_pt_func
     from napari_cool_tools_vol_proc._averaging_tools import average_per_bscan
     from napari_cool_tools_registration._registration_tools import a_scan_correction_func    
     
@@ -170,6 +171,13 @@ def process_bscan_preset_func(vol:Image, ascan_corr:bool=True, Bandpass:bool=Fal
         torch.cuda.empty_cache()
 
     out = normalize_in_range_pt_func(out,0,1)
+
+    out = filter_bilateral_pt_func(out)
+    torch.cuda.empty_cache()
+
+    if Med:
+        out = filter_median_pt_func(out)
+        torch.cuda.empty_cache()
 
     out = adjust_log_pt_func(out,1.5)
 
