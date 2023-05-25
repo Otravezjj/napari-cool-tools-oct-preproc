@@ -7,6 +7,7 @@ from napari.utils.notifications import show_info
 from napari_cool_tools_io import viewer
 from napari.layers import Image, Layer
 from napari.qt.threading import thread_worker
+from napari_cool_tools_io import torch,viewer,memory_stats
 
 def generate_enface_image(vol:Image, debug=False, sin_correct=True, log_correct=True, band_pass_filter=True, CLAHE=True):
     """Generate enface image from OCT volume.
@@ -90,16 +91,19 @@ def generate_enface_image_thread(vol:Image, debug=False, sin_correct=True, log_c
             out.data = normalize_data_in_range_pt_func(out.data,0,1)
 
             if log_correct:
-                out = adjust_log_pt_func(out)
+                out = adjust_log_pt_func(out,2.5)
             if band_pass_filter:
                 out = diff_of_gaus_func(out,1.0,20.0)
             if CLAHE:
+                out.data = out.data.squeeze()
                 out = clahe_pt_func(out)
+                out.data.shape = (out.data.shape[0],1,out.data.shape[1])
 
             if debug:
                 yield out
             else:
                 out.data = out.data.squeeze()
+                out.data = out.data.transpose(1,0)
                 yield out
         else:
             if debug:
@@ -109,3 +113,70 @@ def generate_enface_image_thread(vol:Image, debug=False, sin_correct=True, log_c
             pass
 
     show_info(f'Generate enface image thread has completed')
+
+def process_bscan_preset(vol:Image, ascan_corr:bool=True, Bandpass:bool=False, CLAHE:bool=False):
+    """Do initial preprocessing of OCT B-scan volume.
+    Args:
+        vol (Image): 3D ndarray representing structural OCT data
+
+    Returns:
+        processed b-scan volume(Image)"""
+    
+    process_bscan_preset_thread(vol=vol,ascan_corr=ascan_corr,Bandpass=Bandpass,CLAHE=CLAHE)
+    return 
+
+@thread_worker(connect={"returned": viewer.add_layer})
+def process_bscan_preset_thread(vol:Image, ascan_corr:bool=True, Bandpass:bool=False, CLAHE:bool=False)->Layer:
+    """Do initial preprocessing of OCT B-scan volume.
+    Args:
+        vol (Image): 3D ndarray representing structural OCT data
+
+    Returns:
+        processed b-scan volume(Image)"""
+    
+    show_info(f"B-scan preset thread started")
+    output = process_bscan_preset_func(vol=vol,ascan_corr=ascan_corr,Bandpass=Bandpass,CLAHE=CLAHE)
+    torch.cuda.empty_cache()
+    memory_stats()
+    show_info(f"B-scan preset thread completed")
+    return output
+
+def process_bscan_preset_func(vol:Image, ascan_corr:bool=True, Bandpass:bool=False, CLAHE:bool=False)->Layer:
+    """Do initial preprocessing of OCT B-scan volume.
+    Args:
+        vol (Image): 3D ndarray representing structural OCT data
+
+    Returns:
+        processed b-scan volume(Image)
+    """
+    from napari_cool_tools_img_proc._normalization import normalize_in_range_pt_func
+    from napari_cool_tools_img_proc._denoise import diff_of_gaus_func
+    from napari_cool_tools_img_proc._equalization import clahe_pt_func
+    from napari_cool_tools_img_proc._luminance import adjust_log_pt_func
+    from napari_cool_tools_vol_proc._averaging_tools import average_per_bscan
+    from napari_cool_tools_registration._registration_tools import a_scan_correction_func    
+    
+    out = normalize_in_range_pt_func(vol,0,1)
+
+    out = adjust_log_pt_func(out,2.5)
+    
+    if ascan_corr:
+        out = a_scan_correction_func(out)
+        torch.cuda.empty_cache()
+    if Bandpass:
+        out = diff_of_gaus_func(out,1.6,20)
+    if CLAHE:
+        out = clahe_pt_func(out,1)
+        torch.cuda.empty_cache()
+
+    out = normalize_in_range_pt_func(out,0,1)
+
+    out = adjust_log_pt_func(out,1.5)
+
+    out = average_per_bscan(out)
+
+    name = f"{out.name}_proc"
+    layer_type = 'image'
+    add_kwargs = {"name":name}
+    out_image = Layer.create(out.data,add_kwargs,layer_type)
+    return out_image

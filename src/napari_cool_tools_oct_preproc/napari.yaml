@@ -5,7 +5,13 @@ contributions:
     - id: napari-cool-tools-oct-preproc.generate_enface
       title: Generate Enface Image from structural OCT
       python_name: napari_cool_tools_oct_preproc._oct_preproc_utils:generate_enface_image
+    - id: napari-cool-tools-oct-preproc.proc_bscan
+      title: Process Bscan
+      python_name: napari_cool_tools_oct_preproc._oct_preproc_utils:process_bscan_preset
   widgets:
     - command: napari-cool-tools-oct-preproc.generate_enface
       display_name: Generate Enface Image from structural OCT
+      autogenerate: true
+    - command: napari-cool-tools-oct-preproc.proc_bscan
+      display_name: Process Bscan
       autogenerate: true
