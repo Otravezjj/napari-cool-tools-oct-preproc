@@ -8,10 +8,16 @@ contributions:
     - id: napari-cool-tools-oct-preproc.proc_bscan
       title: Process Bscan
       python_name: napari_cool_tools_oct_preproc._oct_preproc_utils:process_bscan_preset
+    - id: napari-cool-tools-oct-preproc.annotate_pre
+      title: Annotation Preprocessing
+      python_name: napari_cool_tools_oct_preproc._oct_preproc_utils:annotation_preset
   widgets:
     - command: napari-cool-tools-oct-preproc.generate_enface
       display_name: Generate Enface Image from structural OCT
       autogenerate: true
     - command: napari-cool-tools-oct-preproc.proc_bscan
       display_name: Process Bscan
+      autogenerate: true
+    - command: napari-cool-tools-oct-preproc.annotate_pre
+      display_name: Annotation Preprocessing
       autogenerate: true
