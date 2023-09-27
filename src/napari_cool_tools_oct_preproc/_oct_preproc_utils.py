@@ -117,12 +117,12 @@ def generate_enface_image_func(vol:Image, debug=False, sin_correct=True, log_cor
 
             if log_correct:
                 out = adjust_log_pt_func(out,2.5)
-            if band_pass_filter:
-                out = diff_of_gaus_func(out,1.0,20.0)
             if CLAHE:
                 out.data = out.data.squeeze()
                 out = clahe_pt_func(out)
                 out.data.shape = (out.data.shape[0],1,out.data.shape[1])
+            if band_pass_filter:
+                out = diff_of_gaus_func(out,0.6,6.0)
 
             if debug:
                 layers.append(out)
@@ -178,7 +178,7 @@ def process_bscan_preset_func(vol:Image, ascan_corr:bool=True, Bandpass:bool=Fal
     Returns:
         processed b-scan volume(Image)
     """
-    from napari_cool_tools_img_proc._normalization import normalize_in_range_pt_func
+    from napari_cool_tools_img_proc._normalization import normalize_in_range_func, normalize_in_range_pt_func
     from napari_cool_tools_img_proc._denoise import diff_of_gaus_func
     from napari_cool_tools_img_proc._equalization import clahe_pt_func
     from napari_cool_tools_img_proc._luminance import adjust_log_pt_func
@@ -186,20 +186,26 @@ def process_bscan_preset_func(vol:Image, ascan_corr:bool=True, Bandpass:bool=Fal
     from napari_cool_tools_vol_proc._averaging_tools import average_per_bscan
     from napari_cool_tools_registration._registration_tools import a_scan_correction_func    
     
-    out = normalize_in_range_pt_func(vol,0,1)
+    #out = normalize_in_range_pt_func(vol,0,1) # add flag and refactor function
+    out = normalize_in_range_func(vol,0,1)
+
+    #torch.cuda.empty_cache()
 
     out = adjust_log_pt_func(out,2.5)
+    torch.cuda.empty_cache()
     
     if ascan_corr:
         out = a_scan_correction_func(out)
         torch.cuda.empty_cache()
     if Bandpass:
         out = diff_of_gaus_func(out,1.6,20)
+        torch.cuda.empty_cache()
     if CLAHE:
         out = clahe_pt_func(out,1)
         torch.cuda.empty_cache()
 
     out = normalize_in_range_pt_func(out,0,1)
+    torch.cuda.empty_cache()
 
     out = filter_bilateral_pt_func(out)
     torch.cuda.empty_cache()
@@ -209,6 +215,7 @@ def process_bscan_preset_func(vol:Image, ascan_corr:bool=True, Bandpass:bool=Fal
         torch.cuda.empty_cache()
 
     out = adjust_log_pt_func(out,1.5)
+    torch.cuda.empty_cache()
 
     out = average_per_bscan(out)
 
